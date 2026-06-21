@@ -2,7 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import xlsx from "xlsx";
+import ExcelJS from "exceljs";
 
 dotenv.config();
 
@@ -126,39 +126,103 @@ app.get("/api/bookings/export", async (req, res) => {
   try {
     const bookings = await Booking.find().sort({ createdAt: -1 });
 
-    const excelData = bookings.map((b, index) => ({
-      رقم: index + 1,
-      "اسم الطالب": b.studentName,
-      "رقم ولي الأمر": b.guardianPhone,
-      "رقم الطالب": b.studentPhone || "-",
-      "المرحلة الدراسية": b.stage,
-      "الصف الدراسي": b.grade,
-      "تاريخ التسجيل": new Date(b.createdAt).toLocaleDateString("ar-EG"),
-    }));
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("الطلاب المسجلين", {
+      views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }],
+    });
 
-    const worksheet = xlsx.utils.json_to_sheet(excelData);
-
-    // عرض الأعمدة
-    worksheet["!cols"] = [
-      { wch: 8 },
-      { wch: 30 },
-      { wch: 20 },
-      { wch: 20 },
-      { wch: 18 },
-      { wch: 35 },
-      { wch: 15 },
+    // الأعمدة
+    worksheet.columns = [
+      { header: "رقم", key: "id", width: 8 },
+      { header: "اسم الطالب", key: "studentName", width: 30 },
+      { header: "رقم ولي الأمر", key: "guardianPhone", width: 20 },
+      { header: "رقم الطالب", key: "studentPhone", width: 20 },
+      { header: "المرحلة الدراسية", key: "stage", width: 18 },
+      { header: "الصف الدراسي", key: "grade", width: 35 },
+      { header: "تاريخ التسجيل", key: "createdAt", width: 18 },
     ];
 
-    // جعل الورقة من اليمين لليسار
-    worksheet["!dir"] = "rtl";
-
-    const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, worksheet, "الطلاب المسجلين");
-
-    const excelBuffer = xlsx.write(workbook, {
-      type: "buffer",
-      bookType: "xlsx",
+    // إضافة البيانات
+    bookings.forEach((b, index) => {
+      worksheet.addRow({
+        id: index + 1,
+        studentName: b.studentName,
+        guardianPhone: b.guardianPhone,
+        studentPhone: b.studentPhone || "-",
+        stage: b.stage,
+        grade: b.grade,
+        createdAt: new Date(b.createdAt).toLocaleDateString("ar-EG"),
+      });
     });
+
+    // تنسيق صف العناوين
+    const headerRow = worksheet.getRow(1);
+
+    headerRow.eachCell((cell) => {
+      cell.font = {
+        bold: true,
+        size: 13,
+        color: { argb: "FFFFFF" },
+      };
+
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "4472C4" },
+      };
+
+      cell.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+      };
+
+      cell.border = {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    // تنسيق باقي الصفوف
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+
+      row.height = 25;
+
+      row.eachCell((cell) => {
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+        };
+
+        cell.border = {
+          top: { style: "thin", color: { argb: "D9D9D9" } },
+          bottom: { style: "thin", color: { argb: "D9D9D9" } },
+          left: { style: "thin", color: { argb: "D9D9D9" } },
+          right: { style: "thin", color: { argb: "D9D9D9" } },
+        };
+      });
+
+      // تلوين الصفوف بالتبادل
+      if (rowNumber % 2 === 0) {
+        row.eachCell((cell) => {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "F8F9FA" },
+          };
+        });
+      }
+    });
+
+    // فلتر تلقائي
+    worksheet.autoFilter = {
+      from: "A1",
+      to: "G1",
+    };
+
+    const today = new Date().toISOString().split("T")[0];
 
     res.setHeader(
       "Content-Type",
@@ -167,14 +231,16 @@ app.get("/api/bookings/export", async (req, res) => {
 
     res.setHeader(
       "Content-Disposition",
-      "attachment; filename=Bolis_Students_Bookings.xlsx"
+      `attachment; filename=Bolis_Students_${today}.xlsx`
     );
 
-    return res.status(200).send(excelBuffer);
+    await workbook.xlsx.write(res);
+
+    res.end();
   } catch (error) {
     console.error("Error exporting data:", error);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: "حدث خطأ أثناء تصدير البيانات",
     });
