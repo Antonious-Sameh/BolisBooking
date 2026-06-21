@@ -137,20 +137,39 @@ const HomePage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setShowSuccess(true);
-    toast.success("تم إرسال طلب الحجز بنجاح");
-    setTimeout(() => {
-      setFormData({
-        studentName: "",
-        guardianPhone: "",
-        studentPhone: "",
-        stage: "",
-        grade: "",
+    try {
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
-      setShowSuccess(false);
-    }, 4000);
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setShowSuccess(true);
+        toast.success("تم إرسال طلب الحجز بنجاح");
+        setTimeout(() => {
+          setFormData({
+            studentName: "",
+            guardianPhone: "",
+            studentPhone: "",
+            stage: "",
+            grade: "",
+          });
+          setShowSuccess(false);
+        }, 4000);
+      } else {
+        toast.error(data.message || "حدث خطأ أثناء إرسال طلب الحجز");
+      }
+    } catch (error) {
+      console.error("Error submitting booking:", error);
+      toast.error("فشل الاتصال بالسيرفر، يرجى التأكد من تشغيل الـ Backend");
+    }
   };
 
   const scrollToBooking = () => {
@@ -162,7 +181,7 @@ const HomePage = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Helmet>
-        <title>الأستاذ بولس عبدالمسيح - مدرس الدراسات الاجتماعية</title>
+        <title>الأستاذ بولس عبدالمسيح - مدرس الدراسات الاجتماعية والتاريخ</title>
         <meta
           name="description"
           content="خبرة في تدريس الدراسات الاجتماعية بأسلوب مبسط ومتابعة مستمرة للطلاب لتحقيق أفضل النتائج"
@@ -195,7 +214,7 @@ const HomePage = () => {
         </h1>
         
         <p className="text-2xl md:text-3xl font-semibold text-primary mb-6">
-          مدرس الدراسات الاجتماعية
+          مدرس الدراسات الاجتماعية والتاريخ
         </p>
         
         <p className="text-lg md:text-xl leading-relaxed mb-10 max-w-prose text-secondary-foreground/80">

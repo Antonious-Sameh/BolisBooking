@@ -12,17 +12,33 @@ const TeacherLoginPage = () => {
   const navigate = useNavigate();
   const [accessCode, setAccessCode] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (accessCode === 'bolis2026') {
-      toast.success('تم التحقق بنجاح، جاري التحويل...');
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
-    } else {
-      toast.error('كود الدخول غير صحيح، يرجى المحاولة مرة أخرى.');
-      setAccessCode('');
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accessCode }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        localStorage.setItem('isAuthenticated', 'true');
+        toast.success('تم التحقق بنجاح، جاري التحويل...');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
+      } else {
+        toast.error(data.message || 'كود الدخول غير صحيح، يرجى المحاولة مرة أخرى.');
+        setAccessCode('');
+      }
+    } catch (error) {
+      console.error('Error logging in:', error);
+      toast.error('فشل الاتصال بالسيرفر، يرجى التأكد من تشغيل الـ Backend');
     }
   };
 
