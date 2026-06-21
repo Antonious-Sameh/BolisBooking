@@ -117,10 +117,9 @@ const HomePage = () => {
   ];
 
   const secondaryGrades = [
-    { value: "sec1", label: "الصف الأول الثانوي" },
-    { value: "sec2", label: "الصف الثاني الثانوي" },
-    { value: "sec3", label: "الصف الثالث الثانوي" },
-  ];
+  { value: "sec1-boys", label: "الصف الأول الثانوي (بنين)" },
+  { value: "sec1-girls", label: "الصف الأول الثانوي (بنات)" },
+];
 
   const gradeOptions =
     formData.stage === "prep"

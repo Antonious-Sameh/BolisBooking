@@ -248,16 +248,12 @@ const DashboardPage = () => {
                       الصف الثالث الإعدادي (بنات)
                     </SelectItem>
 
-                    <SelectItem value="الصف الأول الثانوي">
-                      الصف الأول الثانوي
+                    <SelectItem value="الصف الأول الثانوي (بنين)">
+                      الصف الأول الثانوي (بنين)
                     </SelectItem>
 
-                    <SelectItem value="الصف الثاني الثانوي">
-                      الصف الثاني الثانوي
-                    </SelectItem>
-
-                    <SelectItem value="الصف الثالث الثانوي">
-                      الصف الثالث الثانوي
+                    <SelectItem value="الصف الأول الثانوي (بنات)">
+                      الصف الأول الثانوي (بنات)
                     </SelectItem>
                   </SelectContent>
                 </Select>
