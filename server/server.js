@@ -90,7 +90,31 @@ app.post("/api/bookings", async (req, res) => {
 // B - Get Bookings (GET /api/bookings)
 app.get("/api/bookings", async (req, res) => {
   try {
-    const bookings = await Booking.find().sort({ createdAt: -1 });
+    const gradeOrder = {
+      "الصف الأول الإعدادي (بنين)": 1,
+      "الصف الأول الإعدادي (بنات)": 2,
+
+      "الصف الثاني الإعدادي (بنين)": 3,
+      "الصف الثاني الإعدادي (بنات)": 4,
+
+      "الصف الثالث الإعدادي (بنين)": 5,
+      "الصف الثالث الإعدادي (بنات)": 6,
+
+      "الصف الأول الثانوي (بنين)": 7,
+      "الصف الأول الثانوي (بنات)": 8,
+
+      "الصف الثاني الثانوي (بنين)": 9,
+      "الصف الثاني الثانوي (بنات)": 10,
+
+      "الصف الثالث الثانوي (بنين)": 11,
+      "الصف الثالث الثانوي (بنات)": 12,
+    };
+
+    const bookings = await Booking.find();
+
+    bookings.sort((a, b) => {
+      return (gradeOrder[a.grade] || 999) - (gradeOrder[b.grade] || 999);
+    });
     return res.status(200).json({ success: true, bookings });
   } catch (error) {
     console.error("Error fetching bookings:", error);
@@ -186,35 +210,66 @@ app.get("/api/bookings/export", async (req, res) => {
 
     // تنسيق باقي الصفوف
     worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return;
+  if (rowNumber === 1) return;
 
-      row.height = 25;
+  row.height = 25;
 
-      row.eachCell((cell) => {
-        cell.alignment = {
-          horizontal: "center",
-          vertical: "middle",
-        };
+  let color = "FFFFFF";
 
-        cell.border = {
-          top: { style: "thin", color: { argb: "D9D9D9" } },
-          bottom: { style: "thin", color: { argb: "D9D9D9" } },
-          left: { style: "thin", color: { argb: "D9D9D9" } },
-          right: { style: "thin", color: { argb: "D9D9D9" } },
-        };
-      });
+  const grade = row.getCell(6).value;
 
-      // تلوين الصفوف بالتبادل
-      if (rowNumber % 2 === 0) {
-        row.eachCell((cell) => {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "F8F9FA" },
-          };
-        });
-      }
-    });
+  switch (grade) {
+    case "الصف الأول الإعدادي (بنين)":
+    case "الصف الأول الإعدادي (بنات)":
+      color = "EAF2FF";
+      break;
+
+    case "الصف الثاني الإعدادي (بنين)":
+    case "الصف الثاني الإعدادي (بنات)":
+      color = "FFF9DB";
+      break;
+
+    case "الصف الثالث الإعدادي (بنين)":
+    case "الصف الثالث الإعدادي (بنات)":
+      color = "FFE8CC";
+      break;
+
+    case "الصف الأول الثانوي (بنين)":
+    case "الصف الأول الثانوي (بنات)":
+      color = "D3F9D8";
+      break;
+
+    case "الصف الثاني الثانوي (بنين)":
+    case "الصف الثاني الثانوي (بنات)":
+      color = "E3FAFC";
+      break;
+
+    case "الصف الثالث الثانوي (بنين)":
+    case "الصف الثالث الثانوي (بنات)":
+      color = "F3D9FA";
+      break;
+  }
+
+  row.eachCell((cell) => {
+    cell.alignment = {
+      horizontal: "center",
+      vertical: "middle",
+    };
+
+    cell.border = {
+      top: { style: "thin", color: { argb: "D9D9D9" } },
+      bottom: { style: "thin", color: { argb: "D9D9D9" } },
+      left: { style: "thin", color: { argb: "D9D9D9" } },
+      right: { style: "thin", color: { argb: "D9D9D9" } },
+    };
+
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: color },
+    };
+  });
+});
 
     // فلتر تلقائي
     worksheet.autoFilter = {
@@ -226,12 +281,12 @@ app.get("/api/bookings/export", async (req, res) => {
 
     res.setHeader(
       "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
 
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=Bolis_Students_${today}.xlsx`
+      `attachment; filename=Bolis_Students_${today}.xlsx`,
     );
 
     await workbook.xlsx.write(res);
