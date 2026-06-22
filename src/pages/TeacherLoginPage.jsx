@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { LockKeyhole } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -10,35 +9,62 @@ import AnimatedSection from '@/components/AnimatedSection.jsx';
 
 const TeacherLoginPage = () => {
   const navigate = useNavigate();
+
   const [accessCode, setAccessCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleBackHome = () => {
+    navigate('/');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    if (isLoading) return;
+
+    const trimmedCode = accessCode.trim();
+
+    if (!trimmedCode) {
+      toast.error('يرجى إدخال كود الدخول');
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ accessCode }),
+        body: JSON.stringify({
+          accessCode: trimmedCode,
+        }),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok && data.success) {
         localStorage.setItem('isAuthenticated', 'true');
-        toast.success('تم التحقق بنجاح، جاري التحويل...');
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1000);
+
+        toast.success('تم التحقق بنجاح');
+
+        navigate('/dashboard');
       } else {
-        toast.error(data.message || 'كود الدخول غير صحيح، يرجى المحاولة مرة أخرى.');
+        toast.error(
+          data.message || 'كود الدخول غير صحيح، يرجى المحاولة مرة أخرى.'
+        );
+
         setAccessCode('');
       }
     } catch (error) {
       console.error('Error logging in:', error);
-      toast.error('فشل الاتصال بالسيرفر، يرجى التأكد من تشغيل الـ Backend');
+
+      toast.error(
+        'فشل الاتصال بالسيرفر، يرجى التأكد من تشغيل الـ Backend'
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,9 +82,11 @@ const TeacherLoginPage = () => {
               <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <LockKeyhole className="w-10 h-10 text-primary" />
               </div>
+
               <h1 className="text-3xl font-bold text-foreground mb-3 font-['Alexandria']">
                 لوحة الإدارة
               </h1>
+
               <p className="text-muted-foreground text-sm">
                 الرجاء إدخال كود الدخول السري للمتابعة
               </p>
@@ -81,16 +109,17 @@ const TeacherLoginPage = () => {
               <Button
                 type="submit"
                 size="lg"
+                disabled={isLoading}
                 className="w-full h-14 bg-foreground text-background hover:bg-foreground/90 shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-lg font-bold rounded-xl"
               >
-                تسجيل الدخول
+                {isLoading ? 'جاري التحقق...' : 'تسجيل الدخول'}
               </Button>
             </form>
-            
+
             <div className="mt-8 text-center">
-              <Button 
-                variant="link" 
-                onClick={() => navigate('/')}
+              <Button
+                variant="link"
+                onClick={handleBackHome}
                 className="text-muted-foreground hover:text-foreground"
               >
                 العودة للرئيسية
